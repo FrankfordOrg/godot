@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://yosm0a2n57t6"]
+
+[node name="RigidBody3D" type="RigidBody3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
