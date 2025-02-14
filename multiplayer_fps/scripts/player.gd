@@ -76,9 +76,22 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func shoot_projectile() -> void:
 	var projectile = Projectile.instantiate()
-	projectile.global_transform = camera.global_transform
+	var pistol = $Camera3D/pistol
+	
+	# Add to scene first
 	get_parent().add_child(projectile)
-	projectile.apply_impulse(Vector3.ZERO, -camera.global_transform.basis.z * projectile.speed)
+	
+	# Set initial position
+	projectile.global_transform = pistol.global_transform
+	projectile.global_transform.origin += -camera.global_transform.basis.z * 0.5
+	
+	# Make the projectile align with camera's view direction
+	projectile.global_transform.basis = camera.global_transform.basis
+	# Rotate 90 degrees around the local X axis to make the cylinder point forward
+	projectile.rotate_object_local(Vector3.RIGHT, PI/2)
+	
+	# Apply impulse last
+	projectile.apply_impulse(-camera.global_transform.basis.z * projectile.speed)
 
 func _physics_process(delta: float) -> void:
 	if multiplayer.multiplayer_peer != null:

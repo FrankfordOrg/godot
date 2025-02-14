@@ -15,7 +15,6 @@ script = ExtResource("1_fk5uy")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(0.02, 0, 0, 0, 0.4, 0, 0, 0, 0.02, 0, 0, 0)
 shape = SubResource("CylinderShape3D_dawau")
-disabled = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(0.02, 0, 0, 0, 0.4, 0, 0, 0, 0.02, 0, 0, 0)
