@@ -16,7 +16,7 @@ height = 0.8
 
 [node name="RigidBody3D" type="RigidBody3D"]
 mass = 0.032
-inertia = Vector3(0.2, 0.2, 0.2)
+inertia = Vector3(1, 1, 0.2)
 script = ExtResource("1_fk5uy")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
