@@ -14,6 +14,7 @@ config/name="FPS Multiplayer Template"
 config/tags=PackedStringArray("fps", "gamepad", "menu", "multiplayer")
 run/main_scene="res://world.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
+run/max_fps=60
 config/icon="res://icon.svg"
 
 [autoload]

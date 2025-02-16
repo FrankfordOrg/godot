@@ -11,133 +11,138 @@ const Projectile = preload("res://projectile.tscn")
 @export var health : int = 2
 ## The xyz position of the random spawns, you can add as many as you want!
 @export var spawns: PackedVector3Array = ([
-	Vector3(-18, 0.2, 0),
-	Vector3(18, 0.2, 0),
-	Vector3(-2.8, 0.2, -6),
-	Vector3(-17,0,17),
-	Vector3(17,0,17),
-	Vector3(17,0,-17),
-	Vector3(-17,0,-17)
+    Vector3(-18, 0.2, 0),
+    Vector3(18, 0.2, 0),
+    Vector3(-2.8, 0.2, -6),
+    Vector3(-17,0,17),
+    Vector3(17,0,17),
+    Vector3(17,0,-17),
+    Vector3(-17,0,-17)
 ])
 
 var sensitivity : float =  .005
 var controller_sensitivity : float =  .010
 
 var axis_vector : Vector2
-var	mouse_captured : bool = true
+var    mouse_captured : bool = true
 
 const SPEED = 5.5
 const JUMP_VELOCITY = 4.5
 
 func _enter_tree() -> void:
-	set_multiplayer_authority(str(name).to_int())
+    set_multiplayer_authority(str(name).to_int())
 
 func _ready() -> void:
-	if not is_multiplayer_authority(): return
+    if not is_multiplayer_authority(): return
 
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	camera.current = true
-	position = spawns[randi() % spawns.size()]
+    Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+    camera.current = true
+    position = spawns[randi() % spawns.size()]
+
+func _on_area_3d_body_entered(body: Node3D) -> void:
+    if body.is_in_group("projectiles"):
+        recieve_damage.rpc(1)
+        body.queue_free()
 
 func _process(_delta: float) -> void:
-	sensitivity = Global.sensitivity
-	controller_sensitivity = Global.controller_sensitivity
+    sensitivity = Global.sensitivity
+    controller_sensitivity = Global.controller_sensitivity
 
-	rotate_y(-axis_vector.x * controller_sensitivity)
-	camera.rotate_x(-axis_vector.y * controller_sensitivity)
-	camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
+    rotate_y(-axis_vector.x * controller_sensitivity)
+    camera.rotate_x(-axis_vector.y * controller_sensitivity)
+    camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not is_multiplayer_authority(): return
+    if not is_multiplayer_authority(): return
 
-	axis_vector = Input.get_vector("look_left", "look_right", "look_up", "look_down")
+    axis_vector = Input.get_vector("look_left", "look_right", "look_up", "look_down")
 
-	if event is InputEventMouseMotion:
-		rotate_y(-event.relative.x * sensitivity)
-		camera.rotate_x(-event.relative.y * sensitivity)
-		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
+    if event is InputEventMouseMotion:
+        rotate_y(-event.relative.x * sensitivity)
+        camera.rotate_x(-event.relative.y * sensitivity)
+        camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 
-	if Input.is_action_just_pressed("shoot") \
-			and anim_player.current_animation != "shoot" :
-		play_shoot_effects.rpc()
-		gunshot_sound.play()
-		shoot_projectile()
+    if Input.is_action_just_pressed("shoot") \
+            and anim_player.current_animation != "shoot" :
+        play_shoot_effects.rpc()
+        gunshot_sound.play()
+        shoot_projectile()
 
-	if Input.is_action_just_pressed("respawn"):
-		recieve_damage(2)
+    if Input.is_action_just_pressed("respawn"):
+        recieve_damage(2)
 
-	if Input.is_action_just_pressed("capture"):
-		if mouse_captured:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			mouse_captured = false
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			mouse_captured = true
+    if Input.is_action_just_pressed("capture"):
+        if mouse_captured:
+            Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+            mouse_captured = false
+        else:
+            Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+            mouse_captured = true
 
 func shoot_projectile() -> void:
-	var projectile = Projectile.instantiate()
-	var pistol = $Camera3D/pistol
-	
-	# Add to scene first
-	get_parent().add_child(projectile)
-	
-	# Set initial position
-	projectile.global_transform = pistol.global_transform
-	projectile.global_transform.origin += -camera.global_transform.basis.z * 0.5
-	
-	# Make the projectile align with camera's view direction
-	projectile.global_transform.basis = camera.global_transform.basis
-	# Rotate 90 degrees around the local X axis to make the cylinder point forward
-	projectile.rotate_object_local(Vector3.RIGHT, PI/2)
-	
-	# Apply impulse last
-	projectile.apply_impulse(-camera.global_transform.basis.z * projectile.speed)
+    var projectile = Projectile.instantiate()
+    var pistol = $Camera3D/pistol
+    
+    # Add to scene first
+    get_parent().add_child(projectile)
+    
+    # Set initial position
+    projectile.global_transform = pistol.global_transform
+    projectile.global_transform.origin += -camera.global_transform.basis.z * 0.5
+    
+    # Make the projectile align with camera's view direction
+    projectile.global_transform.basis = camera.global_transform.basis
+    # Rotate 90 degrees around the local X axis to make the cylinder point forward
+    projectile.rotate_object_local(Vector3.RIGHT, PI/2)
+    
+    # Apply impulse last
+    projectile.apply_impulse(-camera.global_transform.basis.z * projectile.speed)
 
 func _physics_process(delta: float) -> void:
-	if multiplayer.multiplayer_peer != null:
-		# Add the gravity.
-		if not is_on_floor():
-			velocity += get_gravity() * delta
+    if multiplayer.multiplayer_peer != null:
+        # Add the gravity.
+        if not is_on_floor():
+            velocity += get_gravity() * delta
 
-		# Handle jump.
-		if Input.is_action_just_pressed("ui_accept") and is_on_floor():
-			velocity.y = JUMP_VELOCITY
+        # Handle jump.
+        if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+            velocity.y = JUMP_VELOCITY
 
-		# Get the input direction and handle the movement/deceleration.
-		# As good practice, you should replace UI actions with custom gameplay actions.
-		var input_dir := Input.get_vector("left", "right", "up", "down")
-		var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y))
-		if direction:
-			velocity.x = direction.x * SPEED
-			velocity.z = direction.z * SPEED
-		else:
-			velocity.x = move_toward(velocity.x, 0, SPEED)
-			velocity.z = move_toward(velocity.z, 0, SPEED)
+        # Get the input direction and handle the movement/deceleration.
+        # As good practice, you should replace UI actions with custom gameplay actions.
+        var input_dir := Input.get_vector("left", "right", "up", "down")
+        var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y))
+        if direction:
+            velocity.x = direction.x * SPEED
+            velocity.z = direction.z * SPEED
+        else:
+            velocity.x = move_toward(velocity.x, 0, SPEED)
+            velocity.z = move_toward(velocity.z, 0, SPEED)
 
-		if anim_player.current_animation == "shoot":
-			pass
-		elif input_dir != Vector2.ZERO and is_on_floor() :
-			anim_player.play("move")
-		else:
-			anim_player.play("idle")
+        if anim_player.current_animation == "shoot":
+            pass
+        elif input_dir != Vector2.ZERO and is_on_floor() :
+            anim_player.play("move")
+        else:
+            anim_player.play("idle")
 
-		move_and_slide()
+        move_and_slide()
 
 @rpc("call_local")
 func play_shoot_effects() -> void:
-	anim_player.stop()
-	anim_player.play("shoot")
-	muzzle_flash.restart()
-	muzzle_flash.emitting = true
+    anim_player.stop()
+    anim_player.play("shoot")
+    muzzle_flash.restart()
+    muzzle_flash.emitting = true
 
 @rpc("any_peer")
 func recieve_damage(damage:= 1) -> void:
-	health -= damage
-	if health <= 0:
-		health = 2
-		print(spawns.size())
-		position = spawns[randi() % spawns.size()]
+    health -= damage
+    if health <= 0:
+        health = 2
+        print(spawns.size())
+        position = spawns[randi() % spawns.size()]
 
 func _on_animation_player_animation_finished(anim_name: StringName) -> void:
-	if anim_name == "shoot":
-		anim_player.play("idle")
+    if anim_name == "shoot":
+        anim_player.play("idle")
